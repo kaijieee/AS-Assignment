@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="HomePage.aspx.cs" Inherits="Assignment.HomePage" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="HomePage.aspx.cs" Inherits="Assignment.HomePage" %>
 
 <!DOCTYPE html>
 
@@ -15,7 +15,7 @@
     <p class="sign" style="margin-bottom:-90px" align="center">Home Page</p>
     <div class="main" align="middle-center">  
         <form class="form1" id="form2" runat="server">
-            <img src="image/b.png" style="width:150px;height:150px; margin-left:125px; margin-top:15px">
+            <img src="image/success.png" style="width:150px;height:150px; margin-left:125px; margin-top:15px">
             <p class="forgot" align="center" style="color:lightpink; font-weight:bold;"><asp:Label ID="lblMessage" runat="server" Enableviewstate="False"/></p>
             <asp:Button class="submit" ID="btnLogout" runat="server" align="center" Text="Logout" Onclick="LogoutMe"/>
         </form>
