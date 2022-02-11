@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
@@ -14,8 +14,6 @@ namespace Assignment
     {
         static string finalHash;
         static string salt;
-        byte[] Key;
-        byte[] IV;
         string MYDBConnectionString = System.Configuration.ConfigurationManager.ConnectionStrings["MYDBConnection"].ConnectionString;
 
         protected void Page_Load(object sender, EventArgs e)
