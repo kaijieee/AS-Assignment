@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -9,6 +9,8 @@ using System.Net;
 using System.IO;
 using System.Web.Script.Serialization;
 using System.Data.SqlClient;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Assignment
 {
@@ -76,60 +78,156 @@ namespace Assignment
         protected void LoginMe(object sender, EventArgs e)
         {
             string loginemail = tb_userid.Text.ToString().Trim();
-            SqlConnection conSelect = new SqlConnection(MYDBConnectionString);
-            string SQLSTATUS = "Select status from Account where email='" + loginemail + "'";
-            SqlCommand selectstatus = new SqlCommand(SQLSTATUS, conSelect);
-            conSelect.Open();
-            using (SqlDataReader reader = selectstatus.ExecuteReader())
+            string pwd = tb_pwd.Text.ToString().Trim();
+
+            SHA512Managed hashing = new SHA512Managed();
+            string dbHash = getDBHash(loginemail);
+            string dbSalt = getDBSalt(loginemail);
+
+            try
             {
-                while (reader.Read())
+                SqlConnection conSelect = new SqlConnection(MYDBConnectionString);
+                string SQLSTATUS = "Select status from Account where email='" + loginemail + "'";
+                SqlCommand selectstatus = new SqlCommand(SQLSTATUS, conSelect);
+                conSelect.Open();
+                using (SqlDataReader reader = selectstatus.ExecuteReader())
                 {
-                    string dbstatus = null;
-                    dbstatus = reader["status"].ToString();
-
-                    if (attempt == 3 || dbstatus == "locked")
+                    while (reader.Read())
                     {
-                        lbl_lockout.Text = "Your account has been locked due to multiple invalid login attempts, please contact administrator";
-                        SqlConnection con = new SqlConnection(MYDBConnectionString);
-                        String updatestatus = "Update Account set status='locked' where email='" + loginemail + "'";
-                        con.Open();
-                        SqlCommand cmd = new SqlCommand();
-                        cmd.CommandText = updatestatus;
-                        cmd.Connection = con;
-                        cmd.ExecuteNonQuery();
-                    }
+                        string dbstatus = null;
+                        dbstatus = reader["status"].ToString();
 
-                    else if (ValidateCaptcha())
-                    {
-
-                        // Check for Username and password (hard coded for this demo)
-                        if (dbstatus == "open" && tb_userid.Text.Trim().Equals("gkj@gmail.com") && tb_pwd.Text.Trim().Equals("987654321Qq!"))
+                        if (attempt == 3 || dbstatus == "locked")
                         {
+                            lbl_lockout.Text = "Your account has been locked due to multiple invalid login attempts, please contact administrator";
+                            SqlConnection con = new SqlConnection(MYDBConnectionString);
+                            String updatestatus = "Update Account set status='locked' where email='" + loginemail + "'";
+                            con.Open();
+                            SqlCommand cmd = new SqlCommand();
+                            cmd.CommandText = updatestatus;
+                            cmd.Connection = con;
+                            cmd.ExecuteNonQuery();
+                        }
 
-                            Session["LoggedIn"] = tb_userid.Text.Trim();
+                        else if (ValidateCaptcha())
+                        {
+                            if (dbSalt != null && dbSalt.Length > 0 && dbHash != null && dbHash.Length > 0)
+                            {
+                                string pwdWithSalt = pwd + dbSalt;
+                                byte[] hashWithSalt = hashing.ComputeHash(Encoding.UTF8.GetBytes(pwdWithSalt));
+                                string userHash = Convert.ToBase64String(hashWithSalt);
 
-                            // createa a new GUID and save into the session
-                            string guid = Guid.NewGuid().ToString();
-                            Session["AuthToken"] = guid;
+                                if (dbstatus == "open" && userHash.Equals(dbHash))
+                                {
+                                    Session["LoggedIn"] = tb_userid.Text.Trim();
 
-                            // now create a new cookie with this guid value
-                            Response.Cookies.Add(new HttpCookie("AuthToken", guid));
+                                    // createa a new GUID and save into the session
+                                    string guid = Guid.NewGuid().ToString();
+                                    Session["AuthToken"] = guid;
 
-                            Response.Redirect("/HomePage.aspx", false);
+                                    // now create a new cookie with this guid value
+                                    Response.Cookies.Add(new HttpCookie("AuthToken", guid));
+
+                                    Response.Redirect("/HomePage.aspx", false);
+                                }
+                                else
+                                {
+                                        attempt += 1;
+                                        lblMessage.Text = "Wrong email or password";
+                                }
+                            }
                         }
                         else
                         {
-                            attempt += 1;
-                            lblMessage.Text = "Wrong email or password";
+                            lblMessage.Text = "Validate captcha to prove that you are a human.";
                         }
                     }
-                    else
+
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.ToString());
+            }
+
+            finally { }
+        }
+        protected string getDBSalt(string loginemail)
+        {
+
+            string s = null;
+
+            SqlConnection connection = new SqlConnection(MYDBConnectionString);
+            string sql = "select PASSWORDSALT FROM ACCOUNT WHERE Email=@USERID";
+            SqlCommand command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@USERID", loginemail);
+
+            try
+            {
+                connection.Open();
+
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
                     {
-                        lblMessage.Text = "Validate captcha to prove that you are a human.";
+                        if (reader["PASSWORDSALT"] != null)
+                        {
+                            if (reader["PASSWORDSALT"] != DBNull.Value)
+                            {
+                                s = reader["PASSWORDSALT"].ToString();
+                            }
+                        }
                     }
                 }
-                    
+
             }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.ToString());
+            }
+
+            finally { connection.Close(); }
+            return s;
+
+        }
+
+        protected string getDBHash(string loginemail)
+        {
+
+            string h = null;
+
+            SqlConnection connection = new SqlConnection(MYDBConnectionString);
+            string sql = "select PasswordHash FROM Account WHERE Email=@USERID";
+            SqlCommand command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@USERID", loginemail);
+
+            try
+            {
+                connection.Open();
+
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+
+                    while (reader.Read())
+                    {
+                        if (reader["PasswordHash"] != null)
+                        {
+                            if (reader["PasswordHash"] != DBNull.Value)
+                            {
+                                h = reader["PasswordHash"].ToString();
+                            }
+                        }
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.ToString());
+            }
+
+            finally { connection.Close(); }
+            return h;
         }
     }
 }
