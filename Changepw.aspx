@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Changepw.aspx.cs" Inherits="Assignment.Changepw" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Changepw.aspx.cs" Inherits="Assignment.Changepw" %>
 
 <!DOCTYPE html>
 
