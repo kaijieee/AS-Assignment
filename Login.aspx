@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="path/to/font-awesome/css/font-awesome.min.css"/>
     <title>Login</title>
-    <script src="https://www.google.com/recaptcha/api.js?render=6LfwZGkeAAAAAO9s5qq45Y8BLC4tjEnKMUMwfuXa"></script>
+    <script src="https://www.google.com/recaptcha/api.js?render=SiteKey"></script>
 </head>
 <body>
     <div class="main"  style="padding-left:30px; padding-right:30px">  
@@ -32,7 +32,7 @@
     </div>
     <script>
         grecaptcha.ready(function () {
-            grecaptcha.execute('6LfwZGkeAAAAAO9s5qq45Y8BLC4tjEnKMUMwfuXa', { action: 'Login' }).then(function (token) {
+            grecaptcha.execute('SiteKey', { action: 'Login' }).then(function (token) {
                 document.getElementById("g-recaptcha-response").value = token;
             });
         });
